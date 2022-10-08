@@ -1,0 +1,64 @@
+dataset:
+  name: Toronto-3D
+  path: ./original_data/Toronto_3D
+  # add_intensity: True
+  # no_rgb: True
+  ignored_label_inds: [0]
+  num_per_class: [41697357, 1745448, 6572572, 19136493, 674897, 897825, 4634634, 374721]
+  train_files: ['L001.ply', 'L003.ply', 'L004.ply']
+  valid_files: []
+  test_files: ['L002.ply']
+  preprocess: {'method': grid_subsampling, 
+               'parameter': {'grid_size': 0.05},
+               'cache_dir': ./preprocess_data/Toronto_3D/}
+  use_cache: True
+  get_input: {
+              # 'method': spatially_regular_sampler, 
+              # 'method': random_sampler,
+              'method': class_balanced_sampler,
+              'parameter': {'num_points': 131072, 'noise_init': 3.5}} 
+  augment:
+    recenter:
+      dim: [0, 1, 2]
+    normalize:
+      points:
+        method: linear
+
+model:
+  name: RandLA-Net
+  batcher: DefaultBatcher
+  num_neighbours: 16
+  add_fps: False
+  sub_sampling_ratio: [4, 4, 4, 4, 2]
+  in_channels: 6
+  dim_features: 8
+  dim_output: [16, 64, 128, 256, 512]
+  num_classes: 8
+  ckpt_path: all_results/RandLANet_Toronto-3D_xyz+rgb/random_sampler/checkpoints/last_epoch.pth
+  # ckpt_path: all_results/RandLANet_Toronto-3D_xyz+rgb/random_sampler/checkpoints/train_best.pth
+ 
+
+pipeline:
+  pretrain_path:
+  num_epochs: 240
+  train_steps_per_epoch: 100
+  valid_steps_per_epoch: 10
+  train_batch_size: 2
+  valid_batch_size: 2
+  test_batch_size: 1
+  
+  loss:
+    name: focal
+
+  optimizer:
+    name: adam
+    lr: 0.001 # Open3d-ML 为0.01
+    weight_decay: 0 # 原论文和Open3d-ML中都没有设置权重衰减
+
+  scheduler: 
+    name: exponential
+    gamma: 0.99 # 原论文每一个epoch，学习率乘以0.95来表示衰减也是指数衰减; Open3d-ML中gamma为0.99
+
+  results_root: ./all_results
+
+# num_workers: 0
